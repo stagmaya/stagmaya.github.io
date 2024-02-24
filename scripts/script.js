@@ -17,6 +17,7 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 const TODAY = new Date()
 const TODAYS_DATE = DateToInt(TODAY)
 const TODAYS_YEAR = TODAY.getUTCFullYear()
+let RESET_INDEX_DATE = TODAY
 let INDEX_DATE = TODAY
 
 let start_time = GetCurrentTimeInSeconds()
@@ -25,6 +26,14 @@ let isStudent = false;
 let lock_next_prev = {curr_page: 0, max_back: 0, max_next: 1}
 let isDarkMode = false
 let isScheduleDown = true
+
+if(GetDayNamesFromDate(TODAY).match(DAYS[6]) && TODAY.getHours() >= 17) {
+    lock_next_prev.curr_page = 1
+    lock_next_prev.max_back -= 1
+    lock_next_prev.max_next -= 1
+    IndexDateNextPrevWeek()
+    RESET_INDEX_DATE = INDEX_DATE
+}
 
 // Query Value
 const dropdown_trigger = document.querySelector(".trigger");
@@ -459,11 +468,11 @@ function UpdateScheduleData() {
                                             isScheduleChange = true
                                         }
 
-                                        if(teacher_name == "-1") {
+                                        if(teacher_name.match("-1")) {
                                             teacher_name = ""
                                         }
 
-                                        if(course_name != "-1") {
+                                        if(!course_name.match("-1")) {
                                             let label = "red"
                                             if(course_id.indexOf("S") != -1) {
                                                 label = "green"
@@ -560,11 +569,11 @@ function UpdateScheduleData() {
                                         const teacher_id = CLASS_SCHEDULE[selected_dropdown][day_name][time].TeacherID
                                         let teacher_name = GetTeachersName(teacher_id)
 
-                                        if(teacher_name == "-1") {
+                                        if(teacher_name.match("-1")) {
                                             teacher_name = ""
                                         }
 
-                                        if(course_name != "-1") {
+                                        if(!course_name.match("-1")) {
                                             let label = "red"
                                             if(course_id.indexOf("S") != -1) {
                                                 label = "green"
@@ -682,7 +691,7 @@ function UpdateScheduleData() {
                                                 isScheduleChange = true
                                             }
 
-                                            if(course_name != "-1") {
+                                            if(!course_name.match("-1")) {
                                                 let label = "red"
                                                 if(course_id.indexOf("S") != -1) {
                                                     label = "green"
@@ -778,7 +787,7 @@ function UpdateScheduleData() {
                                             const course_name = GetCourseName(course_id)
                                             const class_id = TEACHERS_SCHEDULE[target_id][day_name][time].ClassID
 
-                                            if(course_name != "-1") {
+                                            if(!course_name.match("-1")) {
                                                 let label = "red"
                                                 if(course_id.indexOf("S") != -1) {
                                                     label = "green"
@@ -919,12 +928,12 @@ function UpdateScheduleData() {
 function UpdateSchedule() {
     dropdown_placeholder.innerHTML = selected_dropdown;
     lock_next_prev.curr_page = 0
-    INDEX_DATE = TODAY
+    INDEX_DATE = RESET_INDEX_DATE
 
-    if((!prev_schedule.classList.contains("active") && lock_next_prev.max_back > 0) || (prev_schedule.classList.contains("active") && lock_next_prev.max_back == 0)) {
+    if((!prev_schedule.classList.contains("active") && lock_next_prev.max_back > 0) || (prev_schedule.classList.contains("active") && lock_next_prev.max_back <= 0)) {
         prev_schedule.classList.toggle("active")
     }
-    if((!next_schedule.classList.contains("active") && lock_next_prev.max_next > 0) || (next_schedule.classList.contains("active") && lock_next_prev.max_next == 0)) {
+    if((!next_schedule.classList.contains("active") && lock_next_prev.max_next > 0) || (next_schedule.classList.contains("active") && lock_next_prev.max_next <= 0)) {
         next_schedule.classList.toggle("active")
     }
 
@@ -1012,7 +1021,7 @@ AddDropdownSelection(teachers_name);
 role_switch.addEventListener("click", () => {
     isStudent = !isStudent;
     isScheduleDown = true
-    INDEX_DATE = TODAY
+    INDEX_DATE = RESET_INDEX_DATE
 
     if (isStudent) {
         AddDropdownSelection(CLASS_LIST);
