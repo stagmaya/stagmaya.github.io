@@ -40,12 +40,16 @@
     --text_3: #808080;
     --text_4: #B7B7B7;
     --blue: #B6E5F2;
-    --yellow: #EBDEB0;
+    --yellow: #F7E5A1;
     --green: #B6F2C2;
-    --red: #F2B8B6;
-    --purple: #C4B6F2;
+    --red: #FFB5B3;
+    --purple: #C4B3FF;
     --alter_red: #EE7777;
-    --changes: #B6D7B9;
+    --changes_red: #E3D2CC;
+    --changes_green: #C5D4C5;
+    --changes_blue: #BDD5D9;
+    --changes_yellow: #D9D7BF;
+    --changes_purple: #D6CCDB;
 
     --black: #0F0F0F;
     --darkgrey: #484848;
@@ -105,14 +109,14 @@ section {
     fill-opacity: 0;
     stroke-dasharray: 1;
     opacity: 0;
-    animation: draw_logo 8s ease;
+    animation: draw_logo 5s ease;
 }
 
 .logo_stag {
     height: auto;
     width: min(30vh, 90vw);
     opacity: 1;
-    animation: fade_in_logo 8s ease;
+    animation: fade_in_logo 5s ease;
 }
 
 
@@ -169,6 +173,7 @@ section {
     background: var(--background);
     transition: 300ms background 0ms;
     z-index: 500;
+    cursor: default;
 }
 
 .Start.darken {
@@ -422,6 +427,7 @@ section {
     border-left: 0px solid var(--background);
     border-bottom: 1px dashed var(--text_4) ;
     transition: 200ms border-left ease 200ms;
+    cursor: pointer;
 }
 
 .dropdown_picker .trigger ul.selection li:last-of-type {
@@ -592,9 +598,10 @@ section {
 .schedule_nav .year_month {
     position: absolute;
     padding-left: 5vw;
+    margin-right: 30vw;
     font-family: "PPD Semibold";
     color: var(--text_1);
-    font-size: min(12vw, 8vh);
+    font-size: min(9vw, 8vh);
 }
 
 .schedule_nav .nav_wrapper {
@@ -617,12 +624,12 @@ section {
 }
 
 .schedule_nav .nav_wrapper .prev #prev {
-    width: min(9vw, 6.5vh);
+    width: min(8vw, 6.5vh);
     height: 100%;
 }
 
 .schedule_nav .nav_wrapper .next #next {
-    width: min(9vw, 6.5vh);
+    width: min(8vw, 6.5vh);
     height: 100%;
 }
 
@@ -635,6 +642,7 @@ section {
 .schedule_nav .nav_wrapper .circle {
     fill: var(--text_4);
     transform: 500ms fill ease;
+    cursor: not-allowed;
 }
 
 .schedule_nav .nav_wrapper .nav {
@@ -782,8 +790,24 @@ section {
     background: var(--text_1);
 }
 
-.item_schedule.changes {
-    background: var(--changes);
+.item_schedule.red {
+    background: var(--changes_red);
+}
+
+.item_schedule.green {
+    background: var(--changes_green);
+}
+
+.item_schedule.blue {
+    background: var(--changes_blue);
+}
+
+.item_schedule.yellow {
+    background: var(--changes_yellow);
+}
+
+.item_schedule.purple {
+    background: var(--changes_purple);
 }
 
 .schedule_date .item_wrapper .item_container .item_schedule .inner_item{

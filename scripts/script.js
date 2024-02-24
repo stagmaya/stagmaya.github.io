@@ -2,27 +2,27 @@ import {ClosePreload, ScheduleTrackDown, ScheduleTrackUp} from './animation.js'
 import {DATABASE_URL, GetGDID, GetData} from './database.js'
 
 window.onbeforeunload = function () {
-window.scroll({
-    top: 0,
-    left: 0,
-    behavior: 'instant'
-});
+    window.scroll({
+        top: 0,
+        left: 0,
+        behavior: 'instant'
+    })
 }
 
 /**
  * ~ Global Value ~
  */
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 const TODAY = new Date()
 const TODAYS_DATE = DateToInt(TODAY)
-const TODAYS_DAY = TODAY.getDate()
-const TODAYS_MONTH = TODAY.getMonth()
 const TODAYS_YEAR = TODAY.getUTCFullYear()
+let INDEX_DATE = TODAY
 
 let start_time = GetCurrentTimeInSeconds()
 let selected_dropdown = "";
 let isStudent = false;
-let lock_next_prev = {curr_page: 0, max_back: 1, max_next: 1}
+let lock_next_prev = {curr_page: 0, max_back: 0, max_next: 1}
 let isDarkMode = false
 let isScheduleDown = true
 
@@ -62,7 +62,12 @@ function SetColor() {
         root.style.setProperty('--green', '#99B888')
         root.style.setProperty('--red', '#EE7777')
         root.style.setProperty('--yellow', '#E6DC77')
-        root.style.setProperty('--changes', '#233013')
+
+        root.style.setProperty('--changes_red', '#360A0A')
+        root.style.setProperty('--changes_green', '#0A3612')
+        root.style.setProperty('--changes_blue', '#0A2E36')
+        root.style.setProperty('--changes_yellow', '#33360A')
+        root.style.setProperty('--changes_purple', '#1E0F21')
     }
     else {
         root.style.setProperty('--background', '#F0F0F0')
@@ -72,15 +77,94 @@ function SetColor() {
         root.style.setProperty('--text_4', '#B7B7B7')
         root.style.setProperty('--blue', '#B6E5F2')
         root.style.setProperty('--green', '#B6F2C2')
-        root.style.setProperty('--red', '#F2B8B6')
-        root.style.setProperty('--yellow', '#EBDEB0')
-        root.style.setProperty('--changes', '#B6D7B9')
+        root.style.setProperty('--red', '#FFB5B3')
+        root.style.setProperty('--yellow', '#F7E5A1')
+
+        root.style.setProperty('--changes_red', '#E3D2CC')
+        root.style.setProperty('--changes_green', '#C5D4C5')
+        root.style.setProperty('--changes_blue', '#BDD5D9')
+        root.style.setProperty('--changes_yellow', '#D9D7BF')
+        root.style.setProperty('--changes_purple', '#D6CCDB')
     }
+}
+
+function DateToInt(date) {
+    if (date.getMonth() < 10) {
+        if (date.getDate() < 10) {
+            return parseInt(String(date.getUTCFullYear()) + '0' + String(date.getMonth() + 1) + '0' + String(date.getDate()))
+        }
+        else {
+            return parseInt(String(date.getUTCFullYear()) + '0' + String(date.getMonth() + 1) + String(date.getDate()))
+        }
+    }
+    else {
+        if (date.getDate() < 10) {
+            return parseInt(String(date.getUTCFullYear()) + String(date.getMonth() + 1) + '0' + String(date.getDate()))
+        }
+        else {
+            return parseInt(String(date.getUTCFullYear()) + String(date.getMonth() + 1) + String(date.getDate()))
+        }
+    }
+}
+
+function GetSecondsDifferent(start_time) {
+    return (GetCurrentTimeInSeconds() - start_time)
+}
+
+function GetDayNamesFromDate(date = new Date(), locale = 'en-US') {
+    return date.toLocaleDateString(locale, {weekday: 'short'});
+}
+
+function GetMonthNamesFromDate(date = new Date(), locale = 'en-US') {
+    return date.toLocaleDateString(locale, {month: 'short'});
 }
 
 function GetCurrentTimeInSeconds() {
     let result = new Date();
     return (result.getHours() * 3600 + result.getMinutes() * 60 + result.getSeconds());
+}
+
+function GetDayBeforeAfter(date = new Date(), step) {
+    return new Date(date.setDate(date.getDate() + step))
+}
+
+function IndexDateNextPrevWeek(isNext = true) {
+    for(let i = 0; i < 7; i++) {
+        if(isNext) {
+            INDEX_DATE = GetDayBeforeAfter(INDEX_DATE, 1)
+        }
+        else {
+            INDEX_DATE = GetDayBeforeAfter(INDEX_DATE, -1)
+        }
+    }
+}
+
+function GetDateRange() {
+    let index_day = DAYS.indexOf(GetDayNamesFromDate(INDEX_DATE))
+    let start_index_date = INDEX_DATE
+    while(index_day > 0) {
+        start_index_date = GetDayBeforeAfter(start_index_date, -1)
+        index_day--
+    }
+
+    let result = {date: [], month: [], year: [], dateInt: []}
+    while(index_day < 7) {
+        result.date.push(start_index_date.getDate())
+        const m = GetMonthNamesFromDate(start_index_date)
+        if(result.month.indexOf(m) == -1) {
+            result.month.push(m)
+        }
+
+        const y = start_index_date.getFullYear()
+        if(result.year.indexOf(y) == -1) {
+            result.year.push(y)
+        }
+        
+        result.dateInt.push(DateToInt(start_index_date))
+        start_index_date = GetDayBeforeAfter(start_index_date, 1)
+        index_day++
+    }
+    return result
 }
 
 function MergeStudyBreakTime(study_time, break_time) {
@@ -209,37 +293,6 @@ function GetClassScheduleFormat(schedule_arr, class_list, study_time) {
     }
 
     return result
-}
-
-function DateToInt(date) {
-    if (date.getMonth() < 10) {
-        if (date.getDate() < 10) {
-            return parseInt(String(date.getUTCFullYear()) + '0' + String(date.getMonth() + 1) + '0' + String(date.getDate()))
-        }
-        else {
-            return parseInt(String(date.getUTCFullYear()) + '0' + String(date.getMonth() + 1) + String(date.getDate()))
-        }
-    }
-    else {
-        if (date.getDate() < 10) {
-            return parseInt(String(date.getUTCFullYear()) + String(date.getMonth() + 1) + '0' + String(date.getDate()))
-        }
-        else {
-            return parseInt(String(date.getUTCFullYear()) + String(date.getMonth() + 1) + String(date.getDate()))
-        }
-    }
-}
-
-function GetSecondsDifferent(start_time) {
-    return (GetCurrentTimeInSeconds() - start_time)
-}
-
-function GetDayNamesFromDate(date = new Date(), locale = 'en-US') {
-    return date.toLocaleDateString(locale, {weekday: 'short'});
-}
-
-function GetMonthNamesFromDate(date = new Date(), locale = 'en-US') {
-    return date.toLocaleDateString(locale, {month: 'short'});
 }
 
 function HolidayDateFormater(dates) {
@@ -371,41 +424,26 @@ function GetTeachersName(id) {
 }
 
 function UpdateScheduleData() {
-    let month = TODAYS_MONTH + lock_next_prev.curr_page
-    let year = TODAYS_YEAR
-
-    if (month > 11) {
-        month = 0
-        year = year + 1
-    }
-    else if (month < 0) {
-        month = 11
-        year = year - 1
-    }
-    let index_date = new Date(year, month + 1, 0)
-    const end_day = (index_date).getDate()
-    
+    let date_range = GetDateRange()
+    let day_today = 0
     let result_innerHtml = ``
-    if(isStudent) {
-        for (let i = 1; i <= end_day ; i++) {
-            const curr_date = new Date(year, month, i)
-            let day_name = GetDayNamesFromDate(curr_date)
-            const int_currDate = DateToInt(curr_date)
+    let year_month_text = ""
 
+    if(isStudent) {
+        for(let i = 0; i < 7; i++) {
+            let day_name = DAYS[i]
             let isStudying = " active"
             let schedule_data = `<div class="item_wrapper">
                                     <div class="item_container">`
-
-            if(day_name.match("Sun") || isTheDateHoliday(int_currDate)) {
+            
+            if(i == 6 || isTheDateHoliday(date_range.dateInt[i])) {
                 isStudying = " libur"
             }
             else {
-                if(int_currDate >= START_TEMP_DATE && int_currDate <= END_TEMP_DATE) {
+                if(date_range.dateInt[i] >= START_TEMP_DATE && date_range.dateInt[i] <= END_TEMP_DATE) {
                     if(CLASS_SCHEDULE_TEMP[selected_dropdown] != null) {
                         if(CLASS_SCHEDULE_TEMP[selected_dropdown].ListDay.indexOf(day_name) != -1) {
                             let break_idx = 1
-                            let Total_course = CLASS_SCHEDULE_TEMP[selected_dropdown][day_name].ListTime.length
-                            let counter = 0
                             let course_counter = 1
 
                             TOTAL_TIME.ListTime.forEach(time => {
@@ -439,13 +477,14 @@ function UpdateScheduleData() {
                                             else if(course_id.indexOf("K") != -1){
                                                 label = "purple"
                                             }
+                                            
                                             if(isScheduleChange) {
                                                 schedule_data += `
-                                                <div class="item_schedule changes">
+                                                <div class="item_schedule ` + label + `">
                                                     <div class="item_label ` + label + `"></div>
                                                     <div class="inner_item">
                                                         <div class="time_and_name">
-                                                        <span class="item_time">[` + course_counter + '] '+ time +`</span>
+                                                        <span class="item_time">[` + course_counter + `] ` + time + `</span>
                                                             <span class="item_name">` + course_name + `</span>
                                                         </div>
                                                         <span class="teacher_name">`+ teacher_name + `</span>
@@ -458,7 +497,7 @@ function UpdateScheduleData() {
                                                     <div class="item_label ` + label + `"></div>
                                                     <div class="inner_item">
                                                         <div class="time_and_name">
-                                                        <span class="item_time">[` + course_counter + '] '+ time +`</span>
+                                                        <span class="item_time">[` + course_counter + `] ` + time + `</span>
                                                             <span class="item_name">` + course_name + `</span>
                                                         </div>
                                                         <span class="teacher_name">`+ teacher_name + `</span>
@@ -466,26 +505,36 @@ function UpdateScheduleData() {
                                                 </div>`
                                             }
 
-                                            counter++;
                                             course_counter++
                                         }
                                     }
-                                }
-                                else {
-                                    if(Total_course != counter) {
+                                    else {
                                         schedule_data += `
                                             <div class="item_schedule">
                                                 <div class="item_label non"></div>
                                                 <div class="inner_item">
                                                     <div class="time_and_name">
-                                                        <span class="item_time">`+ time +`</span>
-                                                        <span class="item_name">Istirahat Ke-` + break_idx + `</span>
+                                                        <span class="item_time">[` + course_counter + `] ` + time + `</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         `
-                                        break_idx++
+                                        course_counter++
                                     }
+                                }
+                                else {
+                                    schedule_data += `
+                                        <div class="item_schedule">
+                                            <div class="item_label non"></div>
+                                            <div class="inner_item">
+                                                <div class="time_and_name">
+                                                <span class="item_time">` + time + `</span>
+                                                    <span class="item_name">Istirahat Ke-` + break_idx + `</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `
+                                    break_idx++
                                 }
                             })
                         }
@@ -501,8 +550,6 @@ function UpdateScheduleData() {
                     if(CLASS_SCHEDULE[selected_dropdown] != null) {
                         if(CLASS_SCHEDULE[selected_dropdown].ListDay.indexOf(day_name) != -1) {
                             let break_idx = 1
-                            let Total_course = CLASS_SCHEDULE[selected_dropdown][day_name].ListTime.length
-                            let counter = 0
                             let course_counter = 1
 
                             TOTAL_TIME.ListTime.forEach(time => {
@@ -536,33 +583,43 @@ function UpdateScheduleData() {
                                                 <div class="item_label ` + label + `"></div>
                                                 <div class="inner_item">
                                                     <div class="time_and_name">
-                                                    <span class="item_time">[` + course_counter + '] '+ time +`</span>
+                                                    <span class="item_time">[` + course_counter + `] ` + time + `</span>
                                                         <span class="item_name">` + course_name + `</span>
                                                     </div>
                                                     <span class="teacher_name">`+ teacher_name + `</span>
                                                 </div>
                                             </div>`
 
-                                            counter++;
                                             course_counter++
                                         }
                                     }
-                                }
-                                else {
-                                    if(Total_course != counter) {
+                                    else {
                                         schedule_data += `
                                             <div class="item_schedule">
                                                 <div class="item_label non"></div>
                                                 <div class="inner_item">
                                                     <div class="time_and_name">
-                                                        <span class="item_time">`+ time +`</span>
-                                                        <span class="item_name">Istirahat Ke-` + break_idx + `</span>
+                                                        <span class="item_time">[` + course_counter + `] ` + time + `</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         `
-                                        break_idx++
+                                        course_counter++
                                     }
+                                }
+                                else {
+                                    schedule_data += `
+                                        <div class="item_schedule">
+                                            <div class="item_label non"></div>
+                                            <div class="inner_item">
+                                                <div class="time_and_name">
+                                                <span class="item_time">` + time + `</span>
+                                                    <span class="item_name">Istirahat Ke-` + break_idx + `</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `
+                                    break_idx++
                                 }
                             })
                         }
@@ -576,15 +633,16 @@ function UpdateScheduleData() {
                 }
             }
 
-            if(TODAYS_DATE == int_currDate) {
+            if(TODAYS_DATE == date_range.dateInt[i]) {
                 day_name = "Today"
+                day_today = i
             }
 
             result_innerHtml += `
                 <div class="schedule_date">
                         <div class="item_header">
                             <span class="item_day` + isStudying + `">` + day_name + `</span>
-                            <span class="item_date">` + i + `</span>
+                            <span class="item_date">` + date_range.date[i] + `</span>
                         </div>
                 ` + schedule_data +
                         `<div class="spacer"></div>
@@ -596,25 +654,20 @@ function UpdateScheduleData() {
     else {
         const target_id = GetTeachersID(selected_dropdown)
         if (target_id != "-1") {
-            for (let i = 1; i <= end_day ; i++) {
-                const curr_date = new Date(year, month, i)
-                let day_name = GetDayNamesFromDate(curr_date)
-                const int_currDate = DateToInt(curr_date)
-
+            for(let i = 0; i < 7; i++) {
+                let day_name = DAYS[i]
                 let isTeaching = " active"
                 let schedule_data = `<div class="item_wrapper">
                                         <div class="item_container">`
-
-                if(day_name.match("Sun") || isTheDateHoliday(int_currDate)) {
+                
+                if(i == 6 || isTheDateHoliday(date_range.dateInt[i])) {
                     isTeaching = " libur"
                 }
                 else {
-                    if(int_currDate >= START_TEMP_DATE && int_currDate <= END_TEMP_DATE) {
+                    if(date_range.dateInt[i] >= START_TEMP_DATE && date_range.dateInt[i] <= END_TEMP_DATE) {
                         if(TEACHERS_SCHEDULE_TEMP[target_id] != null) {
                             if(TEACHERS_SCHEDULE_TEMP[target_id].ListDay.indexOf(day_name) != -1) {
                                 let break_idx = 1
-                                let Total_course = TEACHERS_SCHEDULE_TEMP[target_id][day_name].ListTime.length
-                                let counter = 0
                                 let course_counter = 1
 
                                 TOTAL_TIME.ListTime.forEach(time => {
@@ -645,11 +698,11 @@ function UpdateScheduleData() {
                                                 }
                                                 if(isScheduleChange) {
                                                     schedule_data += `
-                                                    <div class="item_schedule changes">
+                                                    <div class="item_schedule ` + label + `">
                                                         <div class="item_label ` + label + `"></div>
                                                         <div class="inner_item">
                                                             <div class="time_and_name">
-                                                                <span class="item_time">[` + course_counter + '] '+ time +`</span>
+                                                                <span class="item_time">[` + course_counter + `] ` + time + `</span>
                                                                 <span class="item_name">` + course_name + `</span>
                                                             </div>
                                                             <span class="class_name">`+ class_id + `</span>
@@ -663,7 +716,7 @@ function UpdateScheduleData() {
                                                         <div class="item_label ` + label + `"></div>
                                                         <div class="inner_item">
                                                             <div class="time_and_name">
-                                                                <span class="item_time">[` + course_counter + '] '+ time +`</span>
+                                                                <span class="item_time">[` + course_counter + `] ` + time + `</span>
                                                                 <span class="item_name">` + course_name + `</span>
                                                             </div>
                                                             <span class="class_name">`+ class_id + `</span>
@@ -671,8 +724,6 @@ function UpdateScheduleData() {
                                                     </div>`
                                                 }
                                                 
-
-                                                counter++;
                                                 course_counter++
                                             }
                                         }
@@ -682,7 +733,7 @@ function UpdateScheduleData() {
                                                     <div class="item_label non"></div>
                                                     <div class="inner_item">
                                                         <div class="time_and_name">
-                                                            <span class="item_time">[` + course_counter + '] '+ time +`</span>
+                                                            <span class="item_time">[` + course_counter + `] ` + time + `</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -691,20 +742,18 @@ function UpdateScheduleData() {
                                         }
                                     }
                                     else {
-                                        if(Total_course != counter) {
-                                            schedule_data += `
-                                                <div class="item_schedule">
-                                                    <div class="item_label non"></div>
-                                                    <div class="inner_item">
-                                                        <div class="time_and_name">
-                                                            <span class="item_time">[` + course_counter + '] '+ time +`</span>
-                                                            <span class="item_name">Istirahat Ke-` + break_idx + `</span>
-                                                        </div>
+                                        schedule_data += `
+                                            <div class="item_schedule">
+                                                <div class="item_label non"></div>
+                                                <div class="inner_item">
+                                                    <div class="time_and_name">
+                                                    <span class="item_time">` + time + `</span>
+                                                        <span class="item_name">Istirahat Ke-` + break_idx + `</span>
                                                     </div>
                                                 </div>
-                                            `
-                                            break_idx++
-                                        }
+                                            </div>
+                                        `
+                                        break_idx++
                                     }
                                 })
                             }
@@ -720,11 +769,8 @@ function UpdateScheduleData() {
                         if(TEACHERS_SCHEDULE[target_id] != null) {
                             if(TEACHERS_SCHEDULE[target_id].ListDay.indexOf(day_name) != -1) {
                                 let break_idx = 1
-                                let Total_course= TEACHERS_SCHEDULE[target_id][day_name].ListTime.length
-                                let counter= 0
                                 let course_counter = 1
 
-                                
                                 TOTAL_TIME.ListTime.forEach(time => {
                                     if(TOTAL_TIME[time]) {
                                         if(TEACHERS_SCHEDULE[target_id][day_name].ListTime.indexOf(time) != -1) {
@@ -751,14 +797,13 @@ function UpdateScheduleData() {
                                                     <div class="item_label ` + label + `"></div>
                                                     <div class="inner_item">
                                                         <div class="time_and_name">
-                                                            <span class="item_time">[` + course_counter + '] '+ time +`</span>
+                                                            <span class="item_time">[` + course_counter + `] ` + time + `</span>
                                                             <span class="item_name">` + course_name + `</span>
                                                         </div>
                                                         <span class="class_name">`+ class_id + `</span>
                                                     </div>
                                                 </div>`
 
-                                                counter++;
                                                 course_counter++
                                             }
                                         }
@@ -768,7 +813,7 @@ function UpdateScheduleData() {
                                                     <div class="item_label non"></div>
                                                     <div class="inner_item">
                                                         <div class="time_and_name">
-                                                            <span class="item_time">[` + course_counter + '] '+ time +`</span>
+                                                            <span class="item_time">[` + course_counter + `] ` + time + `</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -777,20 +822,18 @@ function UpdateScheduleData() {
                                         }
                                     }
                                     else {
-                                        if(Total_course != counter) {
-                                            schedule_data += `
-                                                <div class="item_schedule">
-                                                    <div class="item_label non"></div>
-                                                    <div class="inner_item">
-                                                        <div class="time_and_name">
-                                                        <span class="item_time">`+ time +`</span>
-                                                            <span class="item_name">Istirahat Ke-` + break_idx + `</span>
-                                                        </div>
+                                        schedule_data += `
+                                            <div class="item_schedule">
+                                                <div class="item_label non"></div>
+                                                <div class="inner_item">
+                                                    <div class="time_and_name">
+                                                    <span class="item_time">`+ time +`</span>
+                                                        <span class="item_name">Istirahat Ke-` + break_idx + `</span>
                                                     </div>
                                                 </div>
-                                            `
-                                            break_idx++
-                                        }
+                                            </div>
+                                        `
+                                        break_idx++
                                     }
                                 })
                             }
@@ -804,15 +847,16 @@ function UpdateScheduleData() {
                     }
                 }
 
-                if(TODAYS_DATE == int_currDate) {
+                if(TODAYS_DATE == date_range.dateInt[i]) {
                     day_name = "Today"
+                    day_today = i
                 }
 
                 result_innerHtml += `
                     <div class="schedule_date">
                             <div class="item_header">
                                 <span class="item_day` + isTeaching + `">` + day_name + `</span>
-                                <span class="item_date">` + i + `</span>
+                                <span class="item_date">` + date_range.date[i] + `</span>
                             </div>
                     ` + schedule_data +
                             `<div class="spacer"></div>
@@ -823,14 +867,26 @@ function UpdateScheduleData() {
         }
     }
 
+    if(date_range.month.length == 2) {
+        if(date_range.year == 2) {
+            year_month_text = date_range.month[0] + " - " + date_range.month[1] + " " + date_range.year[1]
+        }
+        else {
+            year_month_text = date_range.month[0] + " - " + date_range.month[1] + " " + date_range.year[0]
+        }
+    }
+    else {
+        year_month_text = date_range.month[0] + " " + date_range.year[0]
+    }
+
     let margin_left = parseInt((schedule_track.currentStyle || window.getComputedStyle(schedule_track)).marginLeft);
 
     if (isScheduleDown) {
         schedule_track.innerHTML = result_innerHtml
-        nav_year_month.innerHTML = GetMonthNamesFromDate(index_date) + " " + year
+        nav_year_month.innerHTML = year_month_text
 
-        if(lock_next_prev.curr_page == 0) {
-            schedule_wrapper.scrollLeft = ((schedule_track.getBoundingClientRect().width) / end_day * (TODAYS_DAY - 1)) + margin_left
+        if(lock_next_prev.curr_page == 0 && day_today != 0) {
+            schedule_wrapper.scrollLeft = ((schedule_track.getBoundingClientRect().width) / 7 * (day_today)) + margin_left
         }
         else {
             schedule_wrapper.scrollLeft = 0
@@ -845,9 +901,9 @@ function UpdateScheduleData() {
         ScheduleTrackDown()
         setTimeout(function() {
             schedule_track.innerHTML = result_innerHtml
-            nav_year_month.innerHTML = GetMonthNamesFromDate(index_date) + " " + year
-            if(lock_next_prev.curr_page == 0) {
-                schedule_wrapper.scrollLeft = ((schedule_track.getBoundingClientRect().width) / end_day * (TODAYS_DAY - 1)) + margin_left
+            nav_year_month.innerHTML = year_month_text
+            if(lock_next_prev.curr_page == 0 && day_today != 0) {
+                schedule_wrapper.scrollLeft = ((schedule_track.getBoundingClientRect().width) / 7 * (day_today)) + margin_left
             }
             else {
                 schedule_wrapper.scrollLeft = 0
@@ -863,10 +919,12 @@ function UpdateScheduleData() {
 function UpdateSchedule() {
     dropdown_placeholder.innerHTML = selected_dropdown;
     lock_next_prev.curr_page = 0
-    if(!prev_schedule.classList.contains("active")) {
+    INDEX_DATE = TODAY
+
+    if((!prev_schedule.classList.contains("active") && lock_next_prev.max_back > 0) || (prev_schedule.classList.contains("active") && lock_next_prev.max_back == 0)) {
         prev_schedule.classList.toggle("active")
     }
-    if(!next_schedule.classList.contains("active")) {
+    if((!next_schedule.classList.contains("active") && lock_next_prev.max_next > 0) || (next_schedule.classList.contains("active") && lock_next_prev.max_next == 0)) {
         next_schedule.classList.toggle("active")
     }
 
@@ -890,16 +948,14 @@ function AddDropdownSelection(list) {
     })
 }
 
-
-
 /**
  * ~ Start Section ~
  */
 nav_year_month.innerHTML = GetMonthNamesFromDate(TODAY) + " " + TODAYS_YEAR
 gsap.to(".schedule_wrapper", {top: "100%", duration: 0})
 
-if (GetSecondsDifferent(start_time) < 10) {
-  while (GetSecondsDifferent(start_time) < 10) {
+if (GetSecondsDifferent(start_time) < 6) {
+  while (GetSecondsDifferent(start_time) < 6) {
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
 }
@@ -956,6 +1012,7 @@ AddDropdownSelection(teachers_name);
 role_switch.addEventListener("click", () => {
     isStudent = !isStudent;
     isScheduleDown = true
+    INDEX_DATE = TODAY
 
     if (isStudent) {
         AddDropdownSelection(CLASS_LIST);
@@ -989,6 +1046,7 @@ next_schedule.addEventListener("click", () => {
         if(!prev_schedule.classList.contains("active")) {
             prev_schedule.classList.toggle("active")
         }
+        IndexDateNextPrevWeek(true)
         UpdateScheduleData()
     }
 })
@@ -1002,6 +1060,7 @@ prev_schedule.addEventListener("click", () => {
         if(!next_schedule.classList.contains("active")) {
             next_schedule.classList.toggle("active")
         }
+        IndexDateNextPrevWeek(false)
         UpdateScheduleData()
     }
 })
