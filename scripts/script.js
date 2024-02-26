@@ -502,6 +502,7 @@ function UpdateScheduleData() {
                                             }
                                             
                                             if(isScheduleChange) {
+                                                pdf_data.isScheduleChange = true
                                                 pdf_data[day_name][time] = "</changes/> " + course_name + " </spacer/> " + teacher_name
                                                 schedule_data += `
                                                 <div class="item_schedule ` + label + `">
@@ -731,6 +732,7 @@ function UpdateScheduleData() {
                                                     label = "purple"
                                                 }
                                                 if(isScheduleChange) {
+                                                    pdf_data.isScheduleChange = true
                                                     pdf_data[day_name][time] = "</changes/> "+  course_name + " </spacer/> " + class_id
                                                     schedule_data += `
                                                     <div class="item_schedule ` + label + `">
@@ -995,7 +997,7 @@ function AddDropdownSelection(list) {
 }
 
 function ResetPDFData() {
-    pdf_data = {ListDay: DAYS.slice(0, 6), time: TOTAL_TIME, ListDate: [], PDFTitle: ""}
+    pdf_data = {ListDay: DAYS.slice(0, 6), time: TOTAL_TIME, ListDate: [], PDFTitle: "", Year: SETUP.ACADEMIC_YEAR, Semester: SETUP.SEMESTER, isScheduleChange: false}
     const total_list_time = TOTAL_TIME.ListTime
 
     for (let i = 0; i < pdf_data.ListDay.length; i++) {

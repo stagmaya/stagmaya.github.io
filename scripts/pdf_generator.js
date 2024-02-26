@@ -61,7 +61,6 @@ export function GeneratePDFSchedule(schedule_list) {
     })
 
     let file_name = "Jadwal " + schedule_list.PDFTitle
-    file_name = file_name_maker(file_name)
 
     //Generate Day Row
     const DAY_INDO = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
@@ -104,7 +103,12 @@ export function GeneratePDFSchedule(schedule_list) {
     textHeight = doc.internal.getFontSize() / doc.internal.scaleFactor
     textX = start_margin_left + (4 * doc.internal.scaleFactor)
     textY = start_margin_top + textHeight + 10
-    doc.text(DateIntToString(schedule_list.ListDate[0]) + " hingga " + DateIntToString(schedule_list.ListDate[(schedule_list.ListDate.length - 1)]), textX, textY)
+    if (schedule_list.isScheduleChange) {
+        doc.text(DateIntToString(schedule_list.ListDate[0]) + " hingga " + DateIntToString(schedule_list.ListDate[(schedule_list.ListDate.length - 1)]), textX, textY)
+    }
+    else {
+        doc.text(("Tahun Ajaran " + schedule_list.Year + " Semester " + schedule_list.Semester), textX, textY)
+    }
     
     start_margin_top = textY + (30 * doc.internal.scaleFactor)
     start_margin_left = margin_left + width_time_course
@@ -125,14 +129,16 @@ export function GeneratePDFSchedule(schedule_list) {
         doc.text(DAY_INDO[i], textX, textY)
 
         // Date
-        let date_format = DateIntToString(schedule_list.ListDate[i])
-        doc.setFont("helvetica", "normal")
-        doc.setTextColor(31, 31, 31)
-        doc.setFontSize(font_size_date)
-        textHeight = doc.internal.getFontSize() / doc.internal.scaleFactor
-        textX = start_margin_left + (4 * doc.internal.scaleFactor)
-        textY += textHeight + 4
-        doc.text(date_format, textX, textY)
+        if (schedule_list.isScheduleChange) {
+            let date_format = DateIntToString(schedule_list.ListDate[i])
+            doc.setFont("helvetica", "normal")
+            doc.setTextColor(31, 31, 31)
+            doc.setFontSize(font_size_date)
+            textHeight = doc.internal.getFontSize() / doc.internal.scaleFactor
+            textX = start_margin_left + (4 * doc.internal.scaleFactor)
+            textY += textHeight + 4
+            doc.text(date_format, textX, textY)
+        }
 
         start_margin_left += width_schedule
     }
@@ -218,7 +224,13 @@ export function GeneratePDFSchedule(schedule_list) {
 
         start_margin_top += height_schedule
     })
-
-    file_name += "_" + schedule_list.ListDate[0] + "_" + schedule_list.ListDate[(schedule_list.ListDate.length - 1)]
+    
+    if (schedule_list.isScheduleChange) {
+        file_name += "_" + schedule_list.ListDate[0] + "_" + schedule_list.ListDate[(schedule_list.ListDate.length - 1)]
+    }
+    else {
+        file_name += "_" + schedule_list.Year + "_Semester_" + schedule_list.Semester
+    }
+    file_name = file_name_maker(file_name)
     doc.save(file_name + ".pdf");
 }
