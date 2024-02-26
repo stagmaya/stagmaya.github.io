@@ -213,6 +213,27 @@ section {
     transition: 300ms color 0ms;
 }
 
+.tag_name .creator {
+    color: var(--text_3);
+    font-family: "PPD Light";
+    font-size: 2vmin;
+    width: 100%;
+    transition: 300ms color 0ms;
+}
+
+.tag_name .creator .me {
+    color: var(--text_3);
+    font-weight: 200;
+    transition: 300ms font-weight 0ms, 300ms color 0ms;
+    cursor: pointer;
+}
+
+.tag_name .creator:hover .me {
+    color: var(--text_1);
+    font-weight: 600;
+    transition: 300ms font-weight 0ms, 300ms color 0ms;
+}
+
 .tag_name.darken .web_name {
     color: var(--darkgrey);
     transition: 300ms color 0ms;

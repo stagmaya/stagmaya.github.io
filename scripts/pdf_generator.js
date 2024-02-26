@@ -147,6 +147,7 @@ export function GeneratePDFSchedule(schedule_list) {
 
     start_margin_top = start_margin_top + height_time
     let i = 1
+    let break_counter = 1
     schedule_list.time.ListTime.forEach(time => {
         start_margin_left = margin_left
 
@@ -178,6 +179,7 @@ export function GeneratePDFSchedule(schedule_list) {
 
 
         start_margin_left += width_time_course
+
         schedule_list.ListDay.forEach(day => {
             if (schedule_list[day][time].indexOf("</holiday/>") != -1) {
                 doc.setFillColor(237, 0, 0)
@@ -188,6 +190,17 @@ export function GeneratePDFSchedule(schedule_list) {
                 doc.setFillColor(0, 0, 0)
                 doc.rect(start_margin_left, start_margin_top, width_schedule, height_schedule, "F")
                 doc.setTextColor(0, 0, 0)
+
+                if(day.indexOf(schedule_list.ListDay[(schedule_list.ListDay.length - 1)]) != -1) {
+                    doc.setFont("helvetica", "bold")
+                    doc.setFontSize(font_size_title)
+                    doc.setTextColor(255, 255, 255)
+                    textHeight = doc.internal.getFontSize() / doc.internal.scaleFactor
+                    textX = margin_left + width_time_course + (width_schedule * 2.25) + (4 * doc.internal.scaleFactor)
+                    textY = start_margin_top + ((height_schedule - textHeight) / 2) + (doc.internal.getFontSize() * 0.3)
+                    doc.text("Istirahat Ke-" + break_counter, textX, textY)
+                    break_counter ++
+                }
             }
             else {
                 if(schedule_list[day][time].indexOf("</changes/>") != -1) {

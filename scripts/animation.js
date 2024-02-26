@@ -38,3 +38,8 @@ var start_animation = gsap.timeline({scrollTrigger:{
 
 start_animation.fromTo(".Start", {opacity: "100%", top: "0%"}, {opacity: "0%", top: "10%"}, 'a')
 .fromTo(".Schedule", {opacity: "0%"}, {opacity: "100%"}, 'a')
+
+const me = document.querySelector(".tag_name .creator .me")
+me.addEventListener("click", () => {
+    window.open("https://yohanesrian.github.io", "_blank");
+})
