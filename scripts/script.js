@@ -1,5 +1,6 @@
 import {ClosePreload, ScheduleTrackDown, ScheduleTrackUp} from './animation.js'
 import {DATABASE_URL, GetGDID, GetData} from './database.js'
+import {GeneratePDFSchedule} from './pdf_generator.js'
 
 window.onbeforeunload = function () {
     window.scroll({
@@ -22,6 +23,7 @@ let INDEX_DATE = TODAY
 
 let start_time = GetCurrentTimeInSeconds()
 let selected_dropdown = "";
+let pdf_data = {}
 let isStudent = false;
 let lock_next_prev = {curr_page: 0, max_back: 0, max_next: 1}
 let isDarkMode = false
@@ -53,6 +55,7 @@ const start_section = document.querySelector(".Start");
 const tag_name = document.querySelector(".tag_name");
 const year_semester = document.querySelector(".year_semester");
 const nav_down = document.querySelector(".nav_down");
+const download_btn = document.querySelector(".download_btn")
 const root = document.querySelector(':root')
 
 /**
@@ -433,12 +436,16 @@ function GetTeachersName(id) {
 }
 
 function UpdateScheduleData() {
+    ResetPDFData()
     let date_range = GetDateRange()
+    const total_list_time = TOTAL_TIME.ListTime
+    pdf_data.ListDate = date_range.dateInt.slice(0, 6)
     let day_today = 0
     let result_innerHtml = ``
     let year_month_text = ""
 
     if(isStudent) {
+        pdf_data.PDFTitle = "Kelas " + selected_dropdown
         for(let i = 0; i < 7; i++) {
             let day_name = DAYS[i]
             let isStudying = " active"
@@ -447,6 +454,13 @@ function UpdateScheduleData() {
             
             if(i == 6 || isTheDateHoliday(date_range.dateInt[i])) {
                 isStudying = " libur"
+                if(i != 6) {
+                    for(let x = 0; x < total_list_time.length; x++) {
+                        if(TOTAL_TIME[total_list_time[x]]) {
+                            pdf_data[day_name][total_list_time[x]] = "</holiday/>"
+                        }
+                    }
+                }
             }
             else {
                 if(date_range.dateInt[i] >= START_TEMP_DATE && date_range.dateInt[i] <= END_TEMP_DATE) {
@@ -488,6 +502,7 @@ function UpdateScheduleData() {
                                             }
                                             
                                             if(isScheduleChange) {
+                                                pdf_data[day_name][time] = "</changes/> " + course_name + " </spacer/> " + teacher_name
                                                 schedule_data += `
                                                 <div class="item_schedule ` + label + `">
                                                     <div class="item_label ` + label + `"></div>
@@ -501,6 +516,7 @@ function UpdateScheduleData() {
                                                 </div>`
                                             }
                                             else {
+                                                pdf_data[day_name][time] = course_name + " </spacer/> " + teacher_name
                                                 schedule_data += `
                                                 <div class="item_schedule">
                                                     <div class="item_label ` + label + `"></div>
@@ -599,6 +615,7 @@ function UpdateScheduleData() {
                                                 </div>
                                             </div>`
 
+                                            pdf_data[day_name][time] = course_name + " </spacer/> " + teacher_name
                                             course_counter++
                                         }
                                     }
@@ -661,6 +678,7 @@ function UpdateScheduleData() {
         }
     }
     else {
+        pdf_data.PDFTitle = selected_dropdown
         const target_id = GetTeachersID(selected_dropdown)
         if (target_id != "-1") {
             for(let i = 0; i < 7; i++) {
@@ -671,6 +689,13 @@ function UpdateScheduleData() {
                 
                 if(i == 6 || isTheDateHoliday(date_range.dateInt[i])) {
                     isTeaching = " libur"
+                    if(i != 6) {
+                        for(let x = 0; x < total_list_time.length; x++) {
+                            if(TOTAL_TIME[total_list_time[x]]) {
+                                pdf_data[day_name][total_list_time[x]] = "</holiday/>"
+                            }
+                        }
+                    }
                 }
                 else {
                     if(date_range.dateInt[i] >= START_TEMP_DATE && date_range.dateInt[i] <= END_TEMP_DATE) {
@@ -706,6 +731,7 @@ function UpdateScheduleData() {
                                                     label = "purple"
                                                 }
                                                 if(isScheduleChange) {
+                                                    pdf_data[day_name][time] = "</changes/> "+  course_name + " </spacer/> " + class_id
                                                     schedule_data += `
                                                     <div class="item_schedule ` + label + `">
                                                         <div class="item_label ` + label + `"></div>
@@ -720,6 +746,7 @@ function UpdateScheduleData() {
 
                                                 }
                                                 else {
+                                                    pdf_data[day_name][time] = course_name + " </spacer/> " + class_id
                                                     schedule_data += `
                                                     <div class="item_schedule">
                                                         <div class="item_label ` + label + `"></div>
@@ -812,6 +839,8 @@ function UpdateScheduleData() {
                                                         <span class="class_name">`+ class_id + `</span>
                                                     </div>
                                                 </div>`
+
+                                                pdf_data[day_name][time] = course_name + " </spacer/> " + class_id
 
                                                 course_counter++
                                             }
@@ -927,6 +956,7 @@ function UpdateScheduleData() {
 
 function UpdateSchedule() {
     dropdown_placeholder.innerHTML = selected_dropdown;
+    ResetPDFData()
     lock_next_prev.curr_page = 0
     INDEX_DATE = RESET_INDEX_DATE
 
@@ -936,7 +966,6 @@ function UpdateSchedule() {
     if((!next_schedule.classList.contains("active") && lock_next_prev.max_next > 0) || (next_schedule.classList.contains("active") && lock_next_prev.max_next <= 0)) {
         next_schedule.classList.toggle("active")
     }
-
     UpdateScheduleData()
 }
 
@@ -951,10 +980,35 @@ function AddDropdownSelection(list) {
     const items = document.querySelectorAll('.selection li')
     items.forEach(item => {
         item.addEventListener('click',(e)=>{
+            if(download_btn.classList.contains("active")) {
+                download_btn.classList.toggle("active")
+            }
+                
             selected_dropdown = String(e.target.textContent)
             UpdateSchedule()
+
+            setTimeout(function() {
+                download_btn.classList.toggle("active")
+            }, 1500)
         })
     })
+}
+
+function ResetPDFData() {
+    pdf_data = {ListDay: DAYS.slice(0, 6), time: TOTAL_TIME, ListDate: [], PDFTitle: ""}
+    const total_list_time = TOTAL_TIME.ListTime
+
+    for (let i = 0; i < pdf_data.ListDay.length; i++) {
+        const idx_day = pdf_data.ListDay[i]
+        pdf_data[idx_day] = {}
+        for (let j = 0; j < total_list_time.length; j++) {
+            pdf_data[idx_day][total_list_time[j]] = ""
+
+            if (!TOTAL_TIME[total_list_time[j]]) {
+                pdf_data[idx_day][total_list_time[j]] = "</break time/>"
+            }
+        }
+    }
 }
 
 /**
@@ -1022,6 +1076,10 @@ role_switch.addEventListener("click", () => {
     isStudent = !isStudent;
     isScheduleDown = true
     INDEX_DATE = RESET_INDEX_DATE
+    ResetPDFData()
+    if(download_btn.classList.contains("active")) {
+        download_btn.classList.toggle("active")
+    }
 
     if (isStudent) {
         AddDropdownSelection(CLASS_LIST);
@@ -1055,8 +1113,15 @@ next_schedule.addEventListener("click", () => {
         if(!prev_schedule.classList.contains("active")) {
             prev_schedule.classList.toggle("active")
         }
+        if(download_btn.classList.contains("active")) {
+            download_btn.classList.toggle("active")
+        }
         IndexDateNextPrevWeek(true)
         UpdateScheduleData()
+
+        setTimeout(function() {
+            download_btn.classList.toggle("active")
+        }, 1500)
     }
 })
 
@@ -1069,7 +1134,20 @@ prev_schedule.addEventListener("click", () => {
         if(!next_schedule.classList.contains("active")) {
             next_schedule.classList.toggle("active")
         }
+        if(download_btn.classList.contains("active")) {
+            download_btn.classList.toggle("active")
+        }
         IndexDateNextPrevWeek(false)
         UpdateScheduleData()
+        
+        setTimeout(function() {
+            download_btn.classList.toggle("active")
+        }, 1500)
+    }
+})
+
+download_btn.addEventListener("click", () => {
+    if (download_btn.classList.contains("active") && pdf_data.PDFTitle != "") {
+        GeneratePDFSchedule(pdf_data)
     }
 })
