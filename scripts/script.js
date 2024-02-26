@@ -460,6 +460,7 @@ function UpdateScheduleData() {
                             pdf_data[day_name][total_list_time[x]] = "</holiday/>"
                         }
                     }
+                    isScheduleChange = true
                 }
             }
             else {
@@ -696,6 +697,7 @@ function UpdateScheduleData() {
                                 pdf_data[day_name][total_list_time[x]] = "</holiday/>"
                             }
                         }
+                        isScheduleChange = true
                     }
                 }
                 else {
