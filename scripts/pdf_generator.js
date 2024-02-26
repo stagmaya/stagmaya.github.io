@@ -62,6 +62,8 @@ export function GeneratePDFSchedule(schedule_list) {
 
     let file_name = "Jadwal " + schedule_list.PDFTitle
 
+    doc.addImage('../asset/logo.png', 'JPEG', (2100 - margin_left - 150), margin_top + 10, 130.4, 150);
+
     //Generate Day Row
     const DAY_INDO = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
     let start_margin_top = margin_top
