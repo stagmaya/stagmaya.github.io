@@ -63,6 +63,13 @@ const root = document.querySelector(':root')
  */
 const zeroPad = (num, places=4) => String(num).padStart(places, '0');
 
+function ZeroRemover(target) {
+    while(target.indexOf(0) == '0') {
+        target = target.slice(1, target.length)
+    }
+    return target
+}
+
 function SetColor() {
     if(isDarkMode) {
         root.style.setProperty('--background', '#0F0F0F')
@@ -319,6 +326,17 @@ function HolidayDateFormater(dates) {
     return [holiday_start, holiday_end]
 }
 
+function TeacherIDNameFormat(teachers_id, teachers_name) {
+    let result = []
+    for (let i = 0; i < teachers_id.length; i++) {
+        result.push("[" + ZeroRemover(teachers_id[i]) + "] " + teachers_name[i])
+    }
+
+    return result
+}
+
+
+
 /**
  * ~ Loading Data  ~
  */
@@ -352,6 +370,7 @@ const TOTAL_TIME = MergeStudyBreakTime(STUDY_TIME, BREAK_TIME)
 const PRE_SETUP_TEACHER = await GetData(SETUP.SCHEDULE_ID, "Daftar Guru", ("B5:C" + (4 + SCHEDULE_SETUP.TOTAL_TEACHER)))
 const TEACHERS_DATA = GetDataInFormat(PRE_SETUP_TEACHER)
 const [teachers_id, teachers_name] = PropertyToList(TEACHERS_DATA, true)
+const teacher_id_name = TeacherIDNameFormat(teachers_id, teachers_name)
 
 // Setup Course Data
 const PRE_SETUP_COURSE = await GetData(SETUP.SCHEDULE_ID, "Daftar Mata Pelajaran", ("B5:C" + (4 + SCHEDULE_SETUP.TOTAL_COURSE)))
@@ -504,7 +523,7 @@ function UpdateScheduleData() {
                                             
                                             if(isScheduleChange) {
                                                 pdf_data.isScheduleChange = true
-                                                pdf_data[day_name][time] = "</changes/> " + course_name + " </spacer/> " + teacher_name
+                                                pdf_data[day_name][time] = "</changes/> " + course_name + " </spacer/> [" + ZeroRemover(teacher_id) + "] " + teacher_name
                                                 schedule_data += `
                                                 <div class="item_schedule ` + label + `">
                                                     <div class="item_label ` + label + `"></div>
@@ -513,12 +532,12 @@ function UpdateScheduleData() {
                                                         <span class="item_time">[` + course_counter + `] ` + time + `</span>
                                                             <span class="item_name">` + course_name + `</span>
                                                         </div>
-                                                        <span class="teacher_name">`+ teacher_name + `</span>
+                                                        <span class="teacher_name">[`+ ZeroRemover(teacher_id) +`] `+ teacher_name + `</span>
                                                     </div>
                                                 </div>`
                                             }
                                             else {
-                                                pdf_data[day_name][time] = course_name + " </spacer/> " + teacher_name
+                                                pdf_data[day_name][time] = course_name + " </spacer/> [" + ZeroRemover(teacher_id) + "] " + teacher_name
                                                 schedule_data += `
                                                 <div class="item_schedule">
                                                     <div class="item_label ` + label + `"></div>
@@ -527,7 +546,7 @@ function UpdateScheduleData() {
                                                         <span class="item_time">[` + course_counter + `] ` + time + `</span>
                                                             <span class="item_name">` + course_name + `</span>
                                                         </div>
-                                                        <span class="teacher_name">`+ teacher_name + `</span>
+                                                        <span class="teacher_name">[`+ ZeroRemover(teacher_id) +`] `+ teacher_name + `</span>
                                                     </div>
                                                 </div>`
                                             }
@@ -613,11 +632,11 @@ function UpdateScheduleData() {
                                                     <span class="item_time">[` + course_counter + `] ` + time + `</span>
                                                         <span class="item_name">` + course_name + `</span>
                                                     </div>
-                                                    <span class="teacher_name">`+ teacher_name + `</span>
+                                                    <span class="teacher_name">[`+ ZeroRemover(teacher_id) +`] `+ teacher_name + `</span>
                                                 </div>
                                             </div>`
 
-                                            pdf_data[day_name][time] = course_name + " </spacer/> " + teacher_name
+                                            pdf_data[day_name][time] = course_name + " </spacer/> [" + ZeroRemover(teacher_id) + "] " + teacher_name
                                             course_counter++
                                         }
                                     }
@@ -681,6 +700,7 @@ function UpdateScheduleData() {
     }
     else {
         pdf_data.PDFTitle = selected_dropdown
+        selected_dropdown = selected_dropdown.split("] ")[1]
         const target_id = GetTeachersID(selected_dropdown)
         if (target_id != "-1") {
             for(let i = 0; i < 7; i++) {
@@ -1073,7 +1093,7 @@ dark_light_switch.addEventListener("click", () => {
 dropdown_trigger.addEventListener("click", () => {
     dropdown_trigger.classList.toggle("active");
 });
-AddDropdownSelection(teachers_name);
+AddDropdownSelection(teacher_id_name);
 
 
 role_switch.addEventListener("click", () => {
@@ -1090,7 +1110,7 @@ role_switch.addEventListener("click", () => {
         dropdown_placeholder.innerHTML = "Pilih kelas";
     }
     else {
-        AddDropdownSelection(teachers_name);
+        AddDropdownSelection(teacher_id_name);
         dropdown_placeholder.innerHTML = "Pilih nama guru";
     }
 
