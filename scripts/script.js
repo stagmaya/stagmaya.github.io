@@ -700,7 +700,10 @@ function UpdateScheduleData() {
     }
     else {
         pdf_data.PDFTitle = selected_dropdown
-        selected_dropdown = selected_dropdown.split("] ")[1]
+        if(selected_dropdown.indexOf("] ") != -1) {
+            selected_dropdown = selected_dropdown.split("] ")[1]
+        }
+        
         const target_id = GetTeachersID(selected_dropdown)
         if (target_id != "-1") {
             for(let i = 0; i < 7; i++) {
