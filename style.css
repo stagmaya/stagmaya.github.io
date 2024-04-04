@@ -132,8 +132,8 @@ section {
 
 .dark_light_switch {
     position: absolute;
-    top: 2em;
-    right: 2em;
+    top: 1.5vmax;
+    right: 1.5vmax;
     cursor: pointer;
 }
 
@@ -354,7 +354,8 @@ section {
 .navigation_wrapper {
     position: relative;
     width: 100%;
-    margin-top: 7vh;
+    margin-top: min(10vw, 6vh);
+    padding-bottom: 1.5vh;
     display: flex;
     flex-wrap: nowrap;
     flex-flow: row wrap-reverse;
@@ -610,7 +611,7 @@ section {
     position: relative;
     height: 9.5vh;
     width: 100%;
-    margin-top: 5vh;
+    margin-top: min(5vh, 2vw);
     display: flex;
     justify-self: center;
     align-items: center;
