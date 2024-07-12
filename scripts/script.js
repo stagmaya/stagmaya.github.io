@@ -277,6 +277,7 @@ function GetTeacherScheduleFormat(schedule_arr, class_list, study_time) {
             }
         }
     }
+    
     result.ListTeacherID.sort()
     return result
 }
@@ -291,19 +292,27 @@ function GetClassScheduleFormat(schedule_arr, class_list, study_time) {
         
         for (let j = 0; j < class_list.length; j++) {
             if(schedule_arr[i][j] != null) {
+                if (!result[class_list[j]]) {
+                    result[class_list[j]] = {ListDay: []}
+                }
+                if (!result[class_list[j]][DAYS[dayIndex]]) {
+                    result[class_list[j]][DAYS[dayIndex]] = {ListTime: []}
+                    result[class_list[j]].ListDay.push(DAYS[dayIndex])
+                }
+
                 if(schedule_arr[i][j].indexOf('_') != -1) {
                     let temp = schedule_arr[i][j].split("_")
         
-                    if (!result[class_list[j]]) {
-                        result[class_list[j]] = {ListDay: []}
-                    }
-                    if (!result[class_list[j]][DAYS[dayIndex]]) {
-                        result[class_list[j]][DAYS[dayIndex]] = {ListTime: []}
-                        result[class_list[j]].ListDay.push(DAYS[dayIndex])
-                    }
                     result[class_list[j]][DAYS[dayIndex]][timeString] = {
                         "CourseID": temp[1],
                         "TeacherID": zeroPad(temp[0])
+                    }
+                    result[class_list[j]][DAYS[dayIndex]].ListTime.push(timeString)
+                }
+                else if(schedule_arr[i][j].match("-")) {
+                    result[class_list[j]][DAYS[dayIndex]][timeString] = {
+                        "CourseID": "-",
+                        "TeacherID": "-"
                     }
                     result[class_list[j]][DAYS[dayIndex]].ListTime.push(timeString)
                 }
@@ -324,15 +333,6 @@ function HolidayDateFormater(dates) {
     })
 
     return [holiday_start, holiday_end]
-}
-
-function TeacherIDNameFormat(teachers_id, teachers_name) {
-    let result = []
-    for (let i = 0; i < teachers_id.length; i++) {
-        result.push("[" + ZeroRemover(teachers_id[i]) + "] " + teachers_name[i])
-    }
-
-    return result
 }
 
 
@@ -370,7 +370,6 @@ const TOTAL_TIME = MergeStudyBreakTime(STUDY_TIME, BREAK_TIME)
 const PRE_SETUP_TEACHER = await GetData(SETUP.SCHEDULE_ID, "Daftar Guru", ("B5:C" + (4 + SCHEDULE_SETUP.TOTAL_TEACHER)))
 const TEACHERS_DATA = GetDataInFormat(PRE_SETUP_TEACHER)
 const [teachers_id, teachers_name] = PropertyToList(TEACHERS_DATA, true)
-const teacher_id_name = TeacherIDNameFormat(teachers_id, teachers_name)
 
 // Setup Course Data
 const PRE_SETUP_COURSE = await GetData(SETUP.SCHEDULE_ID, "Daftar Mata Pelajaran", ("B5:C" + (4 + SCHEDULE_SETUP.TOTAL_COURSE)))
@@ -397,6 +396,7 @@ const END_TEMP_DATE = DateToInt(new Date(SCHEDULE_TEMP_DATE[1][0]))
 // Schedule For Teacher
 const TEACHERS_SCHEDULE = GetTeacherScheduleFormat(SCHEDULE, CLASS_LIST, STUDY_TIME)
 const TEACHERS_SCHEDULE_TEMP = GetTeacherScheduleFormat(SCHEDULE_TEMP, CLASS_LIST, STUDY_TIME)
+const teacher_id_name = TeacherIDNameFormat(teachers_id, teachers_name)
 
 // Schedule For Student Class
 const CLASS_SCHEDULE = GetClassScheduleFormat(SCHEDULE, CLASS_LIST, STUDY_TIME)
@@ -493,64 +493,80 @@ function UpdateScheduleData() {
                                 if(TOTAL_TIME[time]) {
                                     if(CLASS_SCHEDULE_TEMP[selected_dropdown][day_name].ListTime.indexOf(time) != -1) {
                                         const course_id = CLASS_SCHEDULE_TEMP[selected_dropdown][day_name][time].CourseID
-                                        const course_name = GetCourseName(course_id)
                                         const teacher_id = CLASS_SCHEDULE_TEMP[selected_dropdown][day_name][time].TeacherID
-                                        let teacher_name = GetTeachersName(teacher_id)
+                                        
+                                        if(course_id !== "-") {
+                                            const course_name = GetCourseName(course_id)
+                                            let teacher_name = GetTeachersName(teacher_id)
 
-                                        let isScheduleChange = false
-                                        if(CLASS_SCHEDULE[selected_dropdown][day_name][time].CourseID != course_id || CLASS_SCHEDULE[selected_dropdown][day_name][time].TeacherID != teacher_id) {
-                                            isScheduleChange = true
-                                        }
+                                            let isScheduleChange = false
+                                            if(CLASS_SCHEDULE[selected_dropdown][day_name][time].CourseID != course_id || CLASS_SCHEDULE[selected_dropdown][day_name][time].TeacherID != teacher_id) {
+                                                isScheduleChange = true
+                                            }
 
-                                        if(teacher_name.match("-1")) {
-                                            teacher_name = ""
-                                        }
+                                            if(teacher_name.match("-1")) {
+                                                teacher_name = ""
+                                            }
 
-                                        if(!course_name.match("-1")) {
-                                            let label = "red"
-                                            if(course_id.indexOf("S") != -1) {
-                                                label = "green"
-                                            }
-                                            else if(course_id.indexOf("B") != -1) {
-                                                label = "blue"
-                                            }
-                                            else if(course_id.indexOf("A") != -1) {
-                                                label = "yellow"
-                                            }
-                                            else if(course_id.indexOf("K") != -1){
-                                                label = "purple"
-                                            }
-                                            
-                                            if(isScheduleChange) {
-                                                pdf_data.isScheduleChange = true
-                                                pdf_data[day_name][time] = "</changes/> " + course_name + " </spacer/> [" + ZeroRemover(teacher_id) + "] " + teacher_name
-                                                schedule_data += `
-                                                <div class="item_schedule ` + label + `">
-                                                    <div class="item_label ` + label + `"></div>
-                                                    <div class="inner_item">
-                                                        <div class="time_and_name">
-                                                        <span class="item_time">[` + course_counter + `] ` + time + `</span>
-                                                            <span class="item_name">` + course_name + `</span>
+                                            if(!course_name.match("-1")) {
+                                                let label = "red"
+                                                if(course_id.indexOf("S") != -1) {
+                                                    label = "green"
+                                                }
+                                                else if(course_id.indexOf("B") != -1) {
+                                                    label = "blue"
+                                                }
+                                                else if(course_id.indexOf("A") != -1) {
+                                                    label = "yellow"
+                                                }
+                                                else if(course_id.indexOf("K") != -1){
+                                                    label = "purple"
+                                                }
+                                                
+                                                if(isScheduleChange) {
+                                                    pdf_data.isScheduleChange = true
+                                                    pdf_data[day_name][time] = "</changes/> " + course_name + " </spacer/> [" + ZeroRemover(teacher_id) + "] " + teacher_name
+                                                    schedule_data += `
+                                                    <div class="item_schedule ` + label + `">
+                                                        <div class="item_label ` + label + `"></div>
+                                                        <div class="inner_item">
+                                                            <div class="time_and_name">
+                                                            <span class="item_time">[` + course_counter + `] ` + time + `</span>
+                                                                <span class="item_name">` + course_name + `</span>
+                                                            </div>
+                                                            <span class="teacher_name">[`+ ZeroRemover(teacher_id) +`] `+ teacher_name + `</span>
                                                         </div>
-                                                        <span class="teacher_name">[`+ ZeroRemover(teacher_id) +`] `+ teacher_name + `</span>
-                                                    </div>
-                                                </div>`
+                                                    </div>`
+                                                }
+                                                else {
+                                                    pdf_data[day_name][time] = course_name + " </spacer/> [" + ZeroRemover(teacher_id) + "] " + teacher_name
+                                                    schedule_data += `
+                                                    <div class="item_schedule">
+                                                        <div class="item_label ` + label + `"></div>
+                                                        <div class="inner_item">
+                                                            <div class="time_and_name">
+                                                            <span class="item_time">[` + course_counter + `] ` + time + `</span>
+                                                                <span class="item_name">` + course_name + `</span>
+                                                            </div>
+                                                            <span class="teacher_name">[`+ ZeroRemover(teacher_id) +`] `+ teacher_name + `</span>
+                                                        </div>
+                                                    </div>`
+                                                }
+
+                                                course_counter++
                                             }
-                                            else {
-                                                pdf_data[day_name][time] = course_name + " </spacer/> [" + ZeroRemover(teacher_id) + "] " + teacher_name
-                                                schedule_data += `
+                                        }
+                                        else {
+                                            schedule_data += `
                                                 <div class="item_schedule">
-                                                    <div class="item_label ` + label + `"></div>
+                                                    <div class="item_label non"></div>
                                                     <div class="inner_item">
                                                         <div class="time_and_name">
-                                                        <span class="item_time">[` + course_counter + `] ` + time + `</span>
-                                                            <span class="item_name">` + course_name + `</span>
+                                                            <span class="item_time">[` + course_counter + `] ` + time + `</span>
                                                         </div>
-                                                        <span class="teacher_name">[`+ ZeroRemover(teacher_id) +`] `+ teacher_name + `</span>
                                                     </div>
-                                                </div>`
-                                            }
-
+                                                </div>
+                                            `
                                             course_counter++
                                         }
                                     }
@@ -602,43 +618,60 @@ function UpdateScheduleData() {
                                 if(TOTAL_TIME[time]) {
                                     if(CLASS_SCHEDULE[selected_dropdown][day_name].ListTime.indexOf(time) != -1) {
                                         const course_id = CLASS_SCHEDULE[selected_dropdown][day_name][time].CourseID
-                                        const course_name = GetCourseName(course_id)
                                         const teacher_id = CLASS_SCHEDULE[selected_dropdown][day_name][time].TeacherID
-                                        let teacher_name = GetTeachersName(teacher_id)
 
-                                        if(teacher_name.match("-1")) {
-                                            teacher_name = ""
-                                        }
+                                        if(course_id !== "-") {
+                                            const course_name = GetCourseName(course_id)
+                                            let teacher_name = GetTeachersName(teacher_id)
 
-                                        if(!course_name.match("-1")) {
-                                            let label = "red"
-                                            if(course_id.indexOf("S") != -1) {
-                                                label = "green"
+                                            if(teacher_name.match("-1")) {
+                                                teacher_name = ""
                                             }
-                                            else if(course_id.indexOf("B") != -1) {
-                                                label = "blue"
-                                            }
-                                            else if(course_id.indexOf("A") != -1) {
-                                                label = "yellow"
-                                            }
-                                            else if(course_id.indexOf("K") != -1){
-                                                label = "purple"
-                                            }
-                                            schedule_data += `
-                                            <div class="item_schedule">
-                                                <div class="item_label ` + label + `"></div>
-                                                <div class="inner_item">
-                                                    <div class="time_and_name">
-                                                    <span class="item_time">[` + course_counter + `] ` + time + `</span>
-                                                        <span class="item_name">` + course_name + `</span>
+
+                                            if(!course_name.match("-1")) {
+                                                let label = "red"
+                                                if(course_id.indexOf("S") != -1) {
+                                                    label = "green"
+                                                }
+                                                else if(course_id.indexOf("B") != -1) {
+                                                    label = "blue"
+                                                }
+                                                else if(course_id.indexOf("A") != -1) {
+                                                    label = "yellow"
+                                                }
+                                                else if(course_id.indexOf("K") != -1){
+                                                    label = "purple"
+                                                }
+                                                schedule_data += `
+                                                <div class="item_schedule">
+                                                    <div class="item_label ` + label + `"></div>
+                                                    <div class="inner_item">
+                                                        <div class="time_and_name">
+                                                        <span class="item_time">[` + course_counter + `] ` + time + `</span>
+                                                            <span class="item_name">` + course_name + `</span>
+                                                        </div>
+                                                        <span class="teacher_name">[`+ ZeroRemover(teacher_id) +`] `+ teacher_name + `</span>
                                                     </div>
-                                                    <span class="teacher_name">[`+ ZeroRemover(teacher_id) +`] `+ teacher_name + `</span>
-                                                </div>
-                                            </div>`
+                                                </div>`
 
-                                            pdf_data[day_name][time] = course_name + " </spacer/> [" + ZeroRemover(teacher_id) + "] " + teacher_name
+                                                pdf_data[day_name][time] = course_name + " </spacer/> [" + ZeroRemover(teacher_id) + "] " + teacher_name
+                                                course_counter++
+                                            }
+                                        }
+                                        else {
+                                            schedule_data += `
+                                                <div class="item_schedule">
+                                                    <div class="item_label non"></div>
+                                                    <div class="inner_item">
+                                                        <div class="time_and_name">
+                                                            <span class="item_time">[` + course_counter + `] ` + time + `</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `
                                             course_counter++
                                         }
+
                                     }
                                     else {
                                         schedule_data += `
@@ -1036,6 +1069,17 @@ function ResetPDFData() {
             }
         }
     }
+}
+
+function TeacherIDNameFormat(teachers_id, teachers_name) {
+    let result = []
+    for (let i = 0; i < teachers_id.length; i++) {
+        if(TEACHERS_SCHEDULE.ListTeacherID.indexOf(teachers_id[i]) >= 0 || TEACHERS_SCHEDULE_TEMP.ListTeacherID.indexOf(teachers_id[i]) >= 0 ) {
+            result.push("[" + ZeroRemover(teachers_id[i]) + "] " + teachers_name[i])
+        }
+    }
+
+    return result
 }
 
 /**
