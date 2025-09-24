@@ -11,7 +11,11 @@
     <iframe src="" frameBorder="0"></iframe>
     <script>
         const today = new Date();
-        document.querySelector('iframe').src = today.getDay() % 2 === 0 ? "https://stagmaya.vercel.app" : "https://stagmaya.netlify.app";
+        const link = today.getDay() % 2 === 0 ? "https://stagmaya.vercel.app" : "https://stagmaya.netlify.app";
+
+        window.location.replace(link);
+        window.location.href = link;
+        document.querySelector('iframe').src = link;
     </script>
 </body>
 </html>
