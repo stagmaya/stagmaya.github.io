@@ -8,6 +8,10 @@
     <title>STAGMAYA</title>
 </head>
 <body>
-    <iframe src="https://stagmaya.vercel.app" frameBorder="0"></iframe>
+    <iframe src="" frameBorder="0"></iframe>
+    <script>
+        const today = new Date();
+        document.querySelector('iframe').src = today.getDay() % 2 === 0 ? "https://stagmaya.vercel.app" : "https://stagmaya.netlify.app";
+    </script>
 </body>
 </html>
